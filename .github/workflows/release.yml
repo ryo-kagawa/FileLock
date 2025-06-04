@@ -20,7 +20,6 @@ jobs:
       - name: Build Go
         shell: pwsh
         run: |
-          Copy-Item ".\LICENSE"
           go install github.com/google/go-licenses@latest
           go-licenses save ./... --force --save_path ./build/licenses
           go build -o ./build/FileLock.exe -ldflags "-s -w -X=main.version=${{ github.event.inputs.tag }}" -trimpath
