@@ -1,0 +1,70 @@
+package main
+
+import (
+	"errors"
+	"fmt"
+	"os"
+	"strings"
+
+	"github.com/ryo-kagawa/go-utils/commandline"
+	"github.com/ryo-kagawa/go-utils/conditional"
+	"golang.org/x/sys/windows"
+)
+
+type Command struct{}
+
+var _ = (commandline.RootCommand)(Command{})
+
+func (Command) Execute(arguments []string) (string, error) {
+	args, err := commandline.ArgumentsParse[Args](arguments[:conditional.Value(len(arguments) == 0, 0, len(arguments)-1)])
+	if err != nil {
+		return "", err
+	}
+	filePath := ""
+	for _, argument := range arguments {
+		if !strings.HasPrefix(argument, "--lockType=") {
+			filePath = argument
+			break
+		}
+	}
+	if err := args.Validate(); err != nil {
+		return "", err
+	}
+	if filePath == "" {
+		return "", errors.New("filePath is empty")
+	}
+
+	file, err := os.OpenFile(filePath, os.O_RDWR, 0666)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	stat, err := file.Stat()
+	if err != nil {
+		return "", err
+	}
+
+	handle := windows.Handle(file.Fd())
+	overlapped := windows.Overlapped{}
+	flags := uint32(windows.LOCKFILE_FAIL_IMMEDIATELY)
+	if args.LockType == "exclusive" {
+		flags |= windows.LOCKFILE_EXCLUSIVE_LOCK
+	}
+
+	if err := windows.LockFileEx(
+		handle,
+		uint32(flags),
+		0,
+		uint32(stat.Size()+1),
+		0,
+		&overlapped,
+	); err != nil {
+		return "", err
+	}
+
+	fmt.Print("Enterキーでロック解除します")
+	fmt.Scanln()
+
+	return "finish", nil
+}
