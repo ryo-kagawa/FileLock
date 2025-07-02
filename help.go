@@ -11,11 +11,11 @@ type Help struct{}
 var _ = (commandline.SubCommand)(Help{})
 
 var usage = `
-Usage: FileLock [--lockType] filePath
+Usage: FileLock [--lockType] filePath [filePath ...]
 --lockType string
     share: 共有ロック（デフォルト）
-		exclusive: 排他ロック
-filePath: ロックしたいファイルを指定します
+    exclusive: 排他ロック
+filePath: ロックしたいファイルを複数指定します
 Usage: FileLock help
     ここを表示します
 Usage: FileLock version
